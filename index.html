@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>專注牧場 Focus Farm</title>
+<style>
+  :root{
+    --bg1:#e6f1d6; --bg2:#f7f3e3; --card:#fffdf6; --green:#5b8c3a; --dark:#3b3a2a; --brown:#8a6a3d;
+    --muted:#7d7a64; --red:#c9533d; --ring:#e3e8cf; --gold:#e0a82e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--dark);min-height:100vh}
+  header{text-align:center;padding:28px 16px 6px}
+  header h1{margin:0;font-size:2rem;letter-spacing:1px}
+  header p{margin:6px 0 0;color:var(--muted);font-size:.95rem}
+  main{max-width:1000px;margin:0 auto;padding:16px;display:grid;gap:20px;grid-template-columns:1fr}
+  @media(min-width:820px){main{grid-template-columns:380px 1fr}}
+  .card{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 6px 18px rgba(80,70,30,.13);border:2px solid #efe8cc}
+  .card h2{margin:0 0 14px;font-size:1.1rem}
+  .timer-wrap{position:relative;width:240px;height:240px;margin:6px auto 14px}
+  .timer-wrap svg{transform:rotate(-90deg)}
+  .ring-bg{fill:none;stroke:var(--ring);stroke-width:12}
+  .ring-fg{fill:none;stroke:var(--green);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset .3s linear}
+  .timer-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  #plant{line-height:1;height:3.8rem;display:flex;align-items:flex-end;transition:font-size .6s}
+  #time{font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;margin-top:6px}
+  #status{font-size:.8rem;color:var(--muted);height:1.1em}
+  label{display:block;font-size:.85rem;color:var(--muted);margin:10px 0 4px}
+  input[type=text],input[type=number]{width:100%;padding:10px 12px;border:2px solid var(--ring);border-radius:12px;font-size:1rem;font-family:inherit;background:#fff}
+  input:focus{outline:none;border-color:var(--green)}
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .chip{border:2px solid var(--ring);background:#fff;border-radius:999px;padding:6px 14px;cursor:pointer;font-family:inherit;font-size:.9rem;color:var(--dark)}
+  .chip.active{background:var(--green);border-color:var(--green);color:#fff}
+  .btns{display:flex;gap:10px;margin-top:16px}
+  button.main{flex:1;padding:12px;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .1s}
+  button.main:active{transform:scale(.97)}
+  .start{background:var(--green);color:#fff}
+  .ghost{background:#f1ecd6;color:var(--dark)}
+  .danger{background:#fbe9e4;color:var(--red)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .rank{display:flex;align-items:center;gap:10px;background:#f6efd2;border-radius:14px;padding:10px 14px;margin-bottom:14px}
+  .rank .ico{font-size:1.8rem}
+  .rank b{display:block}
+  .rank span{font-size:.8rem;color:var(--muted)}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+  @media(min-width:560px){.stats{grid-template-columns:repeat(4,1fr)}}
+  .stat{background:#f4f6e4;border-radius:14px;padding:10px 6px;text-align:center}
+  .stat b{display:block;font-size:1.35rem}
+  .stat span{font-size:.75rem;color:var(--muted)}
+  .goal{margin-bottom:16px}
+  .goal .top{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;color:var(--muted);margin-bottom:6px}
+  .goal input{width:70px;padding:4px 8px;font-size:.85rem;display:inline-block;border-radius:8px}
+  .bar{height:12px;background:var(--ring);border-radius:999px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#8bbd5a,var(--gold));transition:width .5s}
+  #farm{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;min-height:120px;
+    background:repeating-linear-gradient(0deg,#e9f3d4,#e9f3d4 18px,#e1edc8 18px,#e1edc8 36px);border-radius:16px;padding:10px;border:3px dashed #c8b98a}
+  .tile{background:rgba(255,255,255,.75);border-radius:14px;text-align:center;padding:8px 2px;position:relative;animation:pop .5s ease}
+  .tile .e{display:block;font-size:2rem;line-height:1.2}
+  .tile .e.small{font-size:1.4rem;padding:.3rem 0}
+  .tile small{font-size:.68rem;color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px}
+  .tile.gone{background:rgba(240,225,220,.8);filter:grayscale(.5)}
+  @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+  .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:30px 0}
+  .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .link{background:none;border:none;color:var(--red);cursor:pointer;font-size:.85rem;font-family:inherit}
+  #log{margin-top:14px;font-size:.85rem;color:var(--muted);max-height:120px;overflow:auto}
+  #log div{padding:4px 0;border-bottom:1px dashed #e8e0c0}
+  #modal{position:fixed;inset:0;background:rgba(40,35,20,.55);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+  #modal.show{display:flex}
+  .mbox{background:var(--card);border-radius:20px;padding:24px;max-width:340px;width:100%;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:pop .25s ease}
+  .mbox h3{margin:0 0 8px;font-size:1.2rem}
+  .mbox p{margin:0 0 18px;color:var(--muted);font-size:.95rem;white-space:pre-line}
+  .mbox .btns{margin-top:0}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(90px);background:var(--dark);color:#fff;padding:12px 22px;border-radius:999px;transition:transform .3s;z-index:10;max-width:90vw;text-align:center}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  footer{text-align:center;color:var(--muted);font-size:.8rem;padding:16px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🐑 專注牧場</h1>
+  <p>專心放牧一段時間，就能迎接一隻新羊；中途分心，羊就會跑掉。<br>（靈感來自《克拉克森的農場》的農場日常）</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>⏱️ 開始放牧</h2>
+    <div class="timer-wrap">
+      <svg width="240" height="240" viewBox="0 0 240 240">
+        <circle class="ring-bg" cx="120" cy="120" r="108"/>
+        <circle class="ring-fg" id="ring" cx="120" cy="120" r="108"/>
+      </svg>
+      <div class="timer-center">
+        <div id="plant">🌾</div>
+        <div id="time">25:00</div>
+        <div id="status">準備好草地了</div>
+      </div>
+    </div>
+
+    <label for="task">這次要專心做什麼？</label>
+    <input type="text" id="task" maxlength="20" placeholder="例如：寫作業、讀英文">
+
+    <label>專注時間（分鐘）</label>
+    <div class="presets" id="presets">
+      <button class="chip" data-m="1">1（測試）</button>
+      <button class="chip" data-m="15">15</button>
+      <button class="chip active" data-m="25">25</button>
+      <button class="chip" data-m="45">45</button>
+    </div>
+    <input type="number" id="custom" min="1" max="180" placeholder="自訂分鐘數（1–180）" style="margin-top:8px">
+
+    <div class="btns">
+      <button class="main start" id="startBtn">🌾 開始放牧</button>
+      <button class="main ghost" id="pauseBtn" disabled>暫停</button>
+    </div>
+    <div class="btns">
+      <button class="main danger" id="giveUpBtn" disabled>放棄（羊會跑掉）</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="rank">
+      <div class="ico" id="rankIco">🧑‍🌾</div>
+      <div><b id="rankName">菜鳥農夫</b><span id="rankNext"></span></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="sSheep">0</b><span>羊群數量</span></div>
+      <div class="stat"><b id="sMin">0</b><span>累計專注分鐘</span></div>
+      <div class="stat"><b id="sMoney">£0</b><span>農場資金</span></div>
+      <div class="stat"><b id="sGone">0</b><span>逃跑的羊</span></div>
+    </div>
+
+    <div class="goal">
+      <div class="top">
+        <span>📅 今日目標：<b id="todayMin">0</b> /
+          <input type="number" id="goalInput" min="5" max="600" value="60"> 分鐘</span>
+        <span id="goalMsg"></span>
+      </div>
+      <div class="bar"><i id="goalBar"></i></div>
+    </div>
+
+    <div class="row">
+      <h2 style="margin:0">🏞️ 我的牧場</h2>
+      <button class="link" id="clearBtn">清空牧場</button>
+    </div>
+    <div id="farm"></div>
+    <div id="log"></div>
+  </section>
+</main>
+<footer>資料只儲存在你的瀏覽器（localStorage）。切換分頁時計時仍會繼續。</footer>
+<div id="modal">
+  <div class="mbox">
+    <h3 id="mTitle"></h3>
+    <p id="mText"></p>
+    <div class="btns">
+      <button class="main ghost" id="mNo"></button>
+      <button class="main danger" id="mYes"></button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const CIRC = 2 * Math.PI * 108;
+  const ring = $('ring');
+  ring.style.strokeDasharray = CIRC;
+
+  const NAMES = ['咩咩','毛毛','棉花糖','小雲朵','布丁','麻糬','球球','絨絨','大白','毛線團','胖胖','奶油','饅頭','雲雲'];
+  const EVENTS = [
+    { t: '🚜 拖拉機又拋錨了，維修費 -£15', d: -15 },
+    { t: '🌧️ 突然下大雨，但羊毛賣得出奇好 +£20', d: 20 },
+    { t: '📄 又收到一疊補助申請文件，影印費 -£5', d: -5 },
+    { t: '🎂 隔壁鄰居送來自家蛋糕，士氣大振 +£10', d: 10 },
+    { t: '🛒 農場商店今天大排長龍 +£25', d: 25 },
+    { t: '🐑 你的羊闖進隔壁田，賠了點小錢 -£10', d: -10 },
+  ];
+  const RANKS = [
+    { n: 0,  ico: '🧑‍🌾', name: '菜鳥農夫' },
+    { n: 5,  ico: '🤠', name: '見習牧羊人' },
+    { n: 15, ico: '🚜', name: '老練農夫' },
+    { n: 30, ico: '👑', name: '傳奇牧場主' },
+  ];
+
+  let minutes = 25, totalMs = minutes * 60000, remaining = totalMs, endTime = 0, timer = null;
+  let state = 'idle'; // idle | running | paused
+
+  let farm = [];
+  try { farm = JSON.parse(localStorage.getItem('focusFarm') || '[]'); } catch (e) { farm = []; }
+  let goal = 60;
+  try { goal = parseInt(localStorage.getItem('focusFarmGoal')) || 60; } catch (e) {}
+  $('goalInput').value = goal;
+  const save = () => { try { localStorage.setItem('focusFarm', JSON.stringify(farm)); } catch (e) {} };
+
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt = ms => {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  };
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const dayKey = (d = new Date()) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  const sheepEmoji = m => m >= 40 ? '🐏' : '🐑';
+  const sheepType = m => m >= 40 ? '公羊' : m >= 20 ? '綿羊' : '小羊';
+
+  function stageFor(p) {
+    if (p < .2)  return { e: '🌾', size: 3.2, s: '正在整理草地…' };
+    if (p < .5)  return { e: '🐑', size: 1.8, s: '小羊出生了！' };
+    if (p < .8)  return { e: '🐑', size: 2.6, s: '羊在吃草長大中' };
+    return { e: '🐑', size: 3.4, s: '快要長成了，別分心！' };
+  }
+
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function sound(kind) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const t = ctx.currentTime;
+      if (kind === 'bleat') { // 羊叫聲：鋸齒波＋顫音＋帶通濾波
+        const o = ctx.createOscillator(), lfo = ctx.createOscillator(), lg = ctx.createGain(),
+              g = ctx.createGain(), f = ctx.createBiquadFilter();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(400, t); o.frequency.linearRampToValueAtTime(300, t + .7);
+        lfo.frequency.value = 28; lg.gain.value = .08; lfo.connect(lg); lg.connect(g.gain);
+        f.type = 'bandpass'; f.frequency.value = 1000; f.Q.value = 1.2;
+        g.gain.setValueAtTime(.001, t); g.gain.linearRampToValueAtTime(.18, t + .08);
+        g.gain.exponentialRampToValueAtTime(.001, t + .75);
+        o.connect(f); f.connect(g); g.connect(ctx.destination);
+        o.start(t); lfo.start(t); o.stop(t + .8); lfo.stop(t + .8);
+      } else if (kind === 'clear') { // 清空牧場：三個下行音
+        [520, 390, 260].forEach((fr, i) => {
+          const o = ctx.createOscillator(), g = ctx.createGain(), s = t + i * .16;
+          o.type = 'triangle'; o.frequency.value = fr;
+          g.gain.setValueAtTime(.18, s); g.gain.exponentialRampToValueAtTime(.001, s + .22);
+          o.connect(g); g.connect(ctx.destination); o.start(s); o.stop(s + .23);
+        });
+      } else { // 逃跑：下滑音
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.setValueAtTime(500, t); o.frequency.exponentialRampToValueAtTime(120, t + .5);
+        g.gain.setValueAtTime(.15, t); g.gain.exponentialRampToValueAtTime(.001, t + .5);
+        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + .5);
+      }
+    } catch (e) {}
+  }
+
+  function render() {
+    const progress = 1 - remaining / totalMs;
+    ring.style.strokeDashoffset = CIRC * (1 - progress);
+    $('time').textContent = fmt(remaining);
+    const p = $('plant');
+    if (state === 'idle') { p.textContent = '🌾'; p.style.fontSize = '3.2rem'; $('status').textContent = '準備好草地了'; }
+    else { const s = stageFor(progress); p.textContent = s.e; p.style.fontSize = s.size + 'rem';
+           $('status').textContent = state === 'paused' ? '休息一下…' : s.s; }
+    document.title = state === 'idle' ? '專注牧場 Focus Farm' : fmt(remaining) + ' 放牧中…';
+  }
+
+  function renderFarm() {
+    const g = $('farm'); g.innerHTML = '';
+    if (!farm.length) g.innerHTML = '<div class="empty">牧場還空空的，開始第一次放牧吧 🌾</div>';
+    farm.forEach(it => {
+      const d = document.createElement('div');
+      d.className = 'tile' + (it.ok ? '' : ' gone');
+      d.title = `${it.name}｜${it.task || '專注'}｜${it.min} 分鐘｜${it.date}`;
+      const emoji = it.ok ? sheepEmoji(it.min) : '💨';
+      const small = it.ok && it.min < 20 ? ' small' : '';
+      d.innerHTML = `<span class="e${small}">${emoji}</span><small>${esc(it.name)}</small>`;
+      g.appendChild(d);
+    });
+
+    const ok = farm.filter(i => i.ok);
+    const mins = ok.reduce((a, b) => a + b.min, 0);
+    const money = farm.reduce((a, b) => a + (b.earned || 0), 0);
+    $('sSheep').textContent = ok.length;
+    $('sMin').textContent = mins;
+    $('sMoney').textContent = (money < 0 ? '-£' : '£') + Math.abs(money);
+    $('sGone').textContent = farm.length - ok.length;
+
+    // 等級
+    let r = RANKS[0], next = null;
+    RANKS.forEach((x, i) => { if (ok.length >= x.n) { r = x; next = RANKS[i + 1] || null; } });
+    $('rankIco').textContent = r.ico; $('rankName').textContent = r.name;
+    $('rankNext').textContent = next ? `再 ${next.n - ok.length} 隻羊就能升級為「${next.name}」` : '你已經是最高等級了！';
+
+    // 今日目標
+    const today = dayKey();
+    const tm = ok.filter(i => i.day === today).reduce((a, b) => a + b.min, 0);
+    $('todayMin').textContent = tm;
+    const pct = Math.min(100, tm / goal * 100);
+    $('goalBar').style.width = pct + '%';
+    $('goalMsg').textContent = tm >= goal ? '🎉 達標！' : '';
+
+    // 紀錄
+    const log = $('log'); log.innerHTML = '';
+    farm.slice(-5).reverse().forEach(it => {
+      const row = document.createElement('div');
+      row.textContent = it.ok
+        ? `${it.date}　迎接了${sheepType(it.min)}「${it.name}」（${it.min} 分鐘，${it.earned >= 0 ? '+' : '-'}£${Math.abs(it.earned)}）`
+        : `${it.date}　「${it.name}」趁你分心時跑掉了…`;
+      log.appendChild(row);
+    });
+  }
+
+  function setButtons() {
+    const idle = state === 'idle';
+    $('startBtn').disabled = !idle;
+    $('pauseBtn').disabled = idle;
+    $('pauseBtn').textContent = state === 'paused' ? '繼續' : '暫停';
+    $('giveUpBtn').disabled = idle;
+    $('task').disabled = !idle; $('custom').disabled = !idle;
+    document.querySelectorAll('.chip').forEach(c => c.disabled = !idle);
+  }
+
+  function tick() {
+    remaining = endTime - Date.now();
+    if (remaining <= 0) { finish(); return; }
+    render();
+  }
+
+  function start() {
+    totalMs = minutes * 60000; remaining = totalMs;
+    endTime = Date.now() + remaining;
+    state = 'running'; timer = setInterval(tick, 250);
+    setButtons(); render(); toast('開始放牧，草地準備好了 🌾');
+  }
+
+  function togglePause() {
+    if (state === 'running') { clearInterval(timer); remaining = endTime - Date.now(); state = 'paused'; }
+    else if (state === 'paused') { endTime = Date.now() + remaining; timer = setInterval(tick, 250); state = 'running'; }
+    setButtons(); render();
+  }
+
+  function reset() {
+    clearInterval(timer); state = 'idle'; remaining = totalMs = minutes * 60000;
+    setButtons(); render();
+  }
+
+  function record(ok, name, earned) {
+    farm.push({ name, task: $('task').value.trim(), min: minutes, ok, earned, date: new Date().toLocaleString('zh-TW'), day: dayKey() });
+    save(); renderFarm();
+  }
+
+  function finish() {
+    closeModal();   // 倒數剛好結束時，收起還開著的確認視窗
+    clearInterval(timer); remaining = 0; render();
+    const name = pick(NAMES);
+    let earned = minutes * 2;                  // 基本收入：每分鐘 £2
+    let msg = `🎉 迎接了${sheepType(minutes)}「${name}」！+£${earned}`;
+    if (Math.random() < 0.4) {                 // 40% 機率觸發農場小事件
+      const ev = pick(EVENTS); earned += ev.d; msg += `\n${ev.t}`;
+    }
+    record(true, name, earned);
+    sound('bleat'); toast(msg);
+    setTimeout(reset, 1200);
+  }
+
+  // ---- 確認視窗（可多段）----
+  let mTimer = null;
+  function closeModal() { clearTimeout(mTimer); $('modal').classList.remove('show'); }
+  function askSteps(steps, onYes) {
+    let i = 0;
+    const show = () => {
+      const s = steps[i], last = i === steps.length - 1;
+      $('mTitle').textContent = s.title; $('mText').textContent = s.text;
+      $('mYes').textContent = s.yes; $('mNo').textContent = s.no;
+      $('mYes').disabled = false; clearTimeout(mTimer);
+      if (last && i > 0) {            // 最後一段：停 1.2 秒才能按，避免手滑連點
+        $('mYes').disabled = true;
+        mTimer = setTimeout(() => { $('mYes').disabled = false; }, 1200);
+      }
+      $('modal').classList.add('show');
+    };
+    $('mYes').onclick = () => { i++; if (i < steps.length) show(); else { closeModal(); onYes(); } };
+    $('mNo').onclick = closeModal;
+    show();
+  }
+  $('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  function giveUp() {
+    const left = state === 'running' ? endTime - Date.now() : remaining;
+    if (totalMs - left < 10000) {      // 開始 10 秒內：反悔期，免費取消
+      reset(); toast('已取消這次放牧（10 秒內取消，不算逃跑）');
+      return;
+    }
+    askSteps([
+      { title: '要放棄這次放牧嗎？', text: '放棄後，這隻羊就會跑掉。', yes: '我要放棄', no: '繼續專注' },
+      { title: '真的確定嗎？', text: '羊跑掉之後無法補救，\n也不會獲得任何資金。', yes: '確定放棄', no: '我再撐一下' },
+    ], () => {
+      if (state === 'idle') return;    // 確認期間倒數已結束，就不再處理
+      const name = pick(NAMES);
+      record(false, name, 0);
+      sound('run'); toast(`💨 「${name}」跑掉了… 下次加油`);
+      reset();
+    });
+  }
+
+  function setMinutes(m) {
+    m = Math.min(180, Math.max(1, Math.round(m)));
+    minutes = m; totalMs = remaining = m * 60000; render();
+  }
+
+  document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active'); $('custom').value = ''; setMinutes(+c.dataset.m);
+  }));
+  $('custom').addEventListener('input', e => {
+    const v = parseFloat(e.target.value);
+    if (!isNaN(v) && v > 0) { document.querySelectorAll('.chip').forEach(x => x.classList.remove('active')); setMinutes(v); }
+  });
+  $('goalInput').addEventListener('change', e => {
+    goal = Math.min(600, Math.max(5, parseInt(e.target.value) || 60));
+    e.target.value = goal;
+    try { localStorage.setItem('focusFarmGoal', goal); } catch (err) {}
+    renderFarm();
+  });
+  $('startBtn').addEventListener('click', start);
+  $('pauseBtn').addEventListener('click', togglePause);
+  $('giveUpBtn').addEventListener('click', giveUp);
+  $('clearBtn').addEventListener('click', () => {
+    if (!farm.length) { toast('牧場本來就是空的 🌾'); return; }
+    askSteps([
+      { title: '要清空整座牧場嗎？', text: `目前有 ${farm.length} 筆紀錄，包含羊群與資金。`, yes: '我要清空', no: '先不要' },
+      { title: '最後確認', text: '清空後所有羊、資金與統計都會消失，\n無法復原。', yes: '確定清空', no: '保留牧場' },
+    ], () => {
+      farm = []; save(); renderFarm();
+      sound('clear'); toast('🧹 牧場已清空，重新開始吧');
+    });
+  });
+  window.addEventListener('beforeunload', e => { if (state === 'running') { e.preventDefault(); e.returnValue = ''; } });
+
+  setButtons(); render(); renderFarm();
+})();
+</script>
+</body>
+</html>
